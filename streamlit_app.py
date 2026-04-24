@@ -25,6 +25,7 @@ ingredients_list = st.multiselect('Choose up to 5 ingredients:', fruit_list, max
 
 if len(ingredients_list) > 5:
     st.warning("Please select no more than 5 ingredients.")
+    ingredients_string=''
     st.stop()
 
 # Process selection
