@@ -2,6 +2,7 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
 import requests
+import pandas as pd   # ✅ NEW (required)
 
 # ----------------------------------
 # UI
@@ -20,61 +21,65 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 
 # ----------------------------------
-# Fetch fruit data (IMPORTANT: includes SEARCH_ON)
+# Fetch fruit data (NOW includes SEARCH_ON)
 # ----------------------------------
-fruit_df = session.table("smoothies.public.fruit_options") \
-    .select(col("FRUIT_NAME"), col("SEARCH_ON"))
+my_dataframe = session.table("smoothies.public.fruit_options") \
+    .select(col('FRUIT_NAME'), col('SEARCH_ON'))
 
-fruit_rows = fruit_df.collect()
+# Convert Snowpark → Pandas (IMPORTANT STEP)
+pd_df = my_dataframe.to_pandas()
 
-# Create mapping: UI name -> API name
-fruit_dict = {
-    row["FRUIT_NAME"]: row["SEARCH_ON"]
-    for row in fruit_rows
-}
-
-fruit_list = list(fruit_dict.keys())
+# Optional debug (use if needed)
+# st.dataframe(pd_df)
+# st.stop()
 
 # ----------------------------------
-# Multiselect
+# Multiselect (uses FRUIT_NAME)
 # ----------------------------------
 ingredients_list = st.multiselect(
     'Choose up to 5 ingredients:',
-    fruit_list,
+    pd_df['FRUIT_NAME'],   # ✅ correct source
     max_selections=5
 )
-
-# Safety check
-if len(ingredients_list) > 5:
-    st.warning("Please select no more than 5 ingredients.")
-    st.stop()
 
 # ----------------------------------
 # Process selection
 # ----------------------------------
 if ingredients_list:
 
-    ingredients_string = ', '.join(ingredients_list)
+    ingredients_string = ''
 
-    # Show nutrition info
     for fruit_chosen in ingredients_list:
 
-        search_value = fruit_dict.get(fruit_chosen)
+        # ✅ KEY LINE (core of this step)
+        search_on = pd_df.loc[
+            pd_df['FRUIT_NAME'] == fruit_chosen,
+            'SEARCH_ON'
+        ].iloc[0]
 
+        # Show mapping
+        st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
+
+        # Build ingredients string
+        ingredients_string += fruit_chosen + ' '
+
+        # ----------------------------------
+        # API CALL (USE search_on, NOT fruit_chosen)
+        # ----------------------------------
         st.subheader(f"{fruit_chosen} Nutrition Information")
 
         try:
             response = requests.get(
-                f"https://my.smoothiefroot.com/api/fruit/{search_value.lower()}"
+                f"https://my.smoothiefroot.com/api/fruit/{search_on.lower()}"
             )
 
             if response.status_code == 200:
                 st.dataframe(response.json(), use_container_width=True)
             else:
-                st.error(f"Failed to fetch data for {fruit_chosen}")
+                st.error(f"API returned error for {fruit_chosen}")
 
         except Exception as e:
-            st.error(f"Error fetching data for {fruit_chosen}: {e}")
+            st.error(f"Error fetching data: {e}")
 
     # ----------------------------------
     # Submit Order
@@ -85,20 +90,15 @@ if ingredients_list:
             st.warning("Please enter a name for your smoothie.")
 
         else:
-            try:
-                session.sql(
-                    """
-                    INSERT INTO smoothies.public.orders 
-                    (ingredients, name_on_order)
-                    VALUES (?, ?)
-                    """,
-                    params=[ingredients_string, name_on_order]
-                ).collect()
+            session.sql(
+                """
+                INSERT INTO smoothies.public.orders (ingredients, name_on_order)
+                VALUES (?, ?)
+                """,
+                params=[ingredients_string, name_on_order]
+            ).collect()
 
-                st.success(
-                    f'Your Smoothie is ordered, {name_on_order}!',
-                    icon="✅"
-                )
-
-            except Exception as e:
-                st.error(f"Order failed: {e}")
+            st.success(
+                f'Your Smoothie is ordered, {name_on_order}!',
+                icon="✅"
+            )
