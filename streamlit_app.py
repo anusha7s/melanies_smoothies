@@ -70,7 +70,7 @@ if ingredients_list:
 
         try:
             response = requests.get(
-                f"https://my.smoothiefroot.com/api/fruit/{search_on.lower()}"
+                f"https://my.smoothiefroot.com/api/fruit/{search_on}"
             )
 
             if response.status_code == 200:
