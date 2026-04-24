@@ -31,10 +31,8 @@ if len(ingredients_list) > 5:
 if ingredients_list:
     ingredients_string = ', '.join(ingredients_list)
     smoothiefroot_response = requests.get(
-    "https://my.smoothiefroot.com/api/fruit/watermelon"
-) 
-# st.text(smoothiefroot_response.json())
-sf_df=st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
+    "https://my.smoothiefroot.com/api/fruit/watermelon") 
+    sf_df=st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     # st.write("Your ingredients:", ingredients_string)
 
