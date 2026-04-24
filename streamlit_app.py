@@ -30,6 +30,11 @@ if len(ingredients_list) > 5:
 # Process selection
 if ingredients_list:
     ingredients_string = ', '.join(ingredients_list)
+    smoothiefroot_response = requests.get(
+    "https://my.smoothiefroot.com/api/fruit/watermelon"
+) 
+# st.text(smoothiefroot_response.json())
+sf_df=st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     # st.write("Your ingredients:", ingredients_string)
 
@@ -45,9 +50,3 @@ if ingredients_list:
             ).collect()
 
             st.success(f'Your Smoothie is ordered, {name_on_order}!', icon="✅")
-
-smoothiefroot_response = requests.get(
-    "https://my.smoothiefroot.com/api/fruit/watermelon"
-) 
-# st.text(smoothiefroot_response.json())
-sf_df=st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
