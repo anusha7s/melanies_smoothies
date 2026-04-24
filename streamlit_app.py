@@ -58,7 +58,7 @@ if ingredients_list:
         ].iloc[0]
 
         # Show mapping
-        st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
+        # st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
 
         # Build ingredients string
         ingredients_string += fruit_chosen + ' '
